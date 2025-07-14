@@ -1,0 +1,86 @@
+{% extends "billing/base.html" %}
+{% block title %}Transaction - Fruit Cashier{% endblock %}
+{% block content %}
+<div class="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+  <h1 class="text-xl font-semibold mb-4">Record Transaction</h1>
+  <form id="transactionForm" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label for="fruit_name" class="block text-sm font-medium text-gray-700">Fruit Name</label>
+      <input type="text" id="fruit_name" name="fruit_name" required
+             class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-400">
+    </div>
+    <div>
+      <label for="weight" class="block text-sm font-medium text-gray-700">Weight (grams)</label>
+      <input type="number" id="weight" name="weight" required
+             class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-400">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Price per kg</label>
+      <div id="price_per_kg" class="mt-1 text-lg font-semibold text-gray-800">₹0.00</div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Total Price</label>
+      <div id="total_price" class="mt-1 text-lg font-semibold text-gray-800">₹0.00</div>
+    </div>
+    <button type="submit"
+            class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
+      Confirm
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const fruitPrices = {
+    banana: 150,
+    apple: 300
+  };
+
+  const form = document.getElementById('transactionForm');
+  const pricePerKgEl = document.getElementById('price_per_kg');
+  const totalPriceEl = document.getElementById('total_price');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const fruitInput = document.getElementById('fruit_name');
+    const weightInput = document.getElementById('weight');
+
+    const fruitName = fruitInput.value.toLowerCase();
+    const weight = parseFloat(weightInput.value);
+
+    if (!fruitPrices[fruitName]) {
+      alert("Unsupported fruit!");
+      return;
+    }
+
+    const pricePerKg = fruitPrices[fruitName];
+    const totalPrice = (weight / 1000) * pricePerKg;
+
+    pricePerKgEl.textContent = `₹${pricePerKg.toFixed(2)}`;
+    totalPriceEl.textContent = `₹${totalPrice.toFixed(2)}`;
+
+    // Simulate submitting to backend
+    setTimeout(() => {
+      const formData = new FormData();
+      formData.append('fruit_name', fruitName);
+      formData.append('weight', weight);
+      formData.append('csrfmiddlewareexempt', 'true'); // handled by Django template
+
+      fetch('/receipt', {
+        method: 'POST',
+        body: new URLSearchParams(formData),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }).then(response => {
+        if (response.redirected) {
+          window.location.href = response.url;
+        }
+      });
+    }, 500);
+  });
+</script>
+{% endblock %}

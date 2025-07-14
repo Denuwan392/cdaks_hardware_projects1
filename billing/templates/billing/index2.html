@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fruit Detection</title>
+</head>
+<body>
+    <h1>Detected Fruit</h1>
+    <p id="fruit-name">Loading...</p>
+    <p id="fruit-price"></p>
+
+    <script>
+        async function fetchFruit() {
+            try {
+                const response = await fetch('http://localhost:5001/get_fruit');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                console.log('Fruit data:', data);
+
+                if (data.name && data.name !== "null" && data.name !== "Unknown") {
+                    document.getElementById('fruit-name').innerText = `Name: ${data.name}`;
+                    document.getElementById('fruit-price').innerText = `Price: Rs. ${data.price}`;
+                } else {
+                    document.getElementById('fruit-name').innerText = 'No fruit detected';
+                    document.getElementById('fruit-price').innerText = '';
+                }
+            } catch (error) {
+                console.error('Error fetching fruit data:', error);
+                document.getElementById('fruit-name').innerText = 'Error getting data';
+                document.getElementById('fruit-price').innerText = '';
+            }
+        }
+
+        // Fetch every 3 seconds
+        setInterval(fetchFruit, 3000);
+        fetchFruit(); // Initial call
+    </script>
+</body>
+</html>

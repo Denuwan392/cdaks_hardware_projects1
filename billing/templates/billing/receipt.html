@@ -1,0 +1,18 @@
+{% extends "billing/base.html" %}
+{% block title %}Receipt - Fruit Cashier{% endblock %}
+{% block content %}
+<div class="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+  <h1 class="text-xl font-semibold mb-4">Receipt</h1>
+  <div class="space-y-2">
+    <p><strong>Fruit:</strong> {{ transaction.fruit_name }}</p>
+    <p><strong>Weight:</strong> {{ transaction.weight }} g</p>
+    <p><strong>Price per kg:</strong> ₹{{ transaction.price_per_kg }}</p>
+    <p><strong>Total Price:</strong> ₹{{ transaction.total_price|floatformat:2 }}</p>
+    <p><strong>Timestamp:</strong> {{ transaction.timestamp|date:"Y-m-d H:i:s" }}</p>
+  </div>
+  <a href="{% url 'index' %}"
+     class="mt-6 inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+    Back to Home
+  </a>
+</div>
+{% endblock %}

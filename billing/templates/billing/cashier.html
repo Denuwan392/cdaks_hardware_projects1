@@ -1,0 +1,382 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>CDAKS Super Fruit Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com "></script>
+    </head>
+    <body class="bg-gray-100 text-gray-900 font-sans">
+
+    <!-- Header -->
+    <header class="flex justify-between items-center px-6 py-4 bg-green-600 text-white shadow-md">
+        <h1 class="text-xl font-bold">CDAKS Super Fruit Shop</h1>
+        <div id="currentDate" class="text-sm"></div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 max-w-7xl mx-auto">
+        
+        <!-- Left Panel: Scanned Fruit -->
+        <section class="bg-white rounded-lg shadow p-6 flex flex-col space-y-4">
+        <h2 class="text-lg font-semibold border-b pb-2">Scanned Fruit</h2>
+
+        <!-- Live Webcam Feed -->
+        <div class="relative w-full aspect-video bg-black rounded overflow-hidden">
+            <!--video id="webcam" autoplay muted playsinline class="w-full h-full object-cover"></video-->
+            <!--img src="http://localhost:5001/video_feed" style="width: 100%; border-radius: 10px;" /-->
+            <img src="{% url 'video_feed' %}" style="width: 100%; border-radius: 10px;" alt="Live video feed" />
+
+
+            <!--img id="predictedImage" class="hidden absolute inset-0 w-full h-full object-contain" alt="Predicted Fruit Image"/-->
+        </div>
+
+
+        <!-- Display Predicted Fruit -->
+        <p class="font-medium text-lg text-center" id="fruitLabel">Selected Fruit: <span class="text-green-600">None</span></p>
+        
+
+        <!-- Weight Input -->
+        <div class="mt-4">
+            <label for="weightInput" class="block mb-1 font-medium">Enter Weight (kg)</label>
+            <input type="number" step="0.01" min="0" id="weightInput" placeholder="e.g. 1.2 kg"
+                class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring focus:border-blue-500"/>
+        </div>
+        
+
+        <!-- Buttons -->
+        <div class="flex space-x-2">
+            <button onclick="ThisisCorrecctFruit()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+            Correct
+            </button>
+            <button onclick="addToBill()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+            Add to Bill
+            </button>
+        </div>
+        </section>
+
+        <!-- Right Panel: Cart -->
+        <section class="bg-white rounded-lg shadow p-6 flex flex-col space-y-4">
+        <h2 class="text-lg font-semibold border-b pb-2">Cart</h2>
+
+        <!-- Cart Table -->
+        <div class="overflow-auto">
+            <table class="min-w-full table-auto text-left">
+            <thead class="bg-gray-100">
+                <tr>
+                <th class="px-4 py-2">Item</th>
+                <th class="px-4 py-2">Weight</th>
+                <th class="px-4 py-2">Price/kg</th>
+                <th class="px-4 py-2">Total</th>
+                <th class="px-4 py-2">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="cartTableBody">
+                <!-- JS Injected Rows -->
+            </tbody>
+            </table>
+        </div>
+
+        <!-- Totals Section -->
+        <div class="space-y-2 mt-4">
+            <div class="flex justify-between">
+            <span>Subtotal:</span>
+            <span id="subtotal">LKR 0.00</span>
+            </div>
+            <div class="flex justify-between">
+            <span>Discount:</span>
+            <span id="discount">LKR 0.00</span>
+            </div>
+            <div class="flex justify-between font-bold text-lg">
+            <span>Total:</span>
+            <span id="total">LKR 0.00</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-4 gap-2 pt-2 mt-2 border-t">
+            <button class="col-span-1 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cash</button>
+            <button class="col-span-1 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Card</button>
+            <button onclick="resetCart()" class="col-span-1 py-2 bg-red-600 text-white rounded hover:bg-red-700">Reset</button>
+            <button onclick="printReceipt()" class="col-span-1 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Print</button>
+        </div>
+        </section>
+    </main>
+
+     <div id="fruit-info" class="text-xl font-bold p-4"></div>
+
+    <!-- Scripts -->
+    <script>
+        // Set today's date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+
+        // Access webcam
+
+        const predictedImage = document.getElementById('predictedImage');
+        const fruitLabel = document.getElementById('fruitLabel').querySelector('span');
+
+
+
+        let currentFruit = null;
+
+        // Capture frame and send to backend
+        async function ThisisCorrecctFruit() {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        const base64Image = canvas.toDataURL('image/jpeg');
+
+        try {
+            const response = await fetch('/predict_fruit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ image: base64Image })
+            });
+
+            const result = await response.json();
+            currentFruit = result.fruit;
+
+            fruitLabel.textContent = currentFruit || "Unknown";
+
+            if (currentFruit) {
+            predictedImage.src = `/media/fruits/${currentFruit.toLowerCase()}.jpg`;
+            predictedImage.classList.remove('hidden');
+            video.classList.add('hidden');
+            }
+        } catch (err) {
+            console.error("Prediction failed:", err);
+        }
+        }
+
+        // Add item to cart
+        async function addToBill() {
+        const weightInput = document.getElementById('weightInput');
+        const weight = parseFloat(weightInput.value);
+        if (!currentFruit || isNaN(weight) || weight <= 0) {
+            alert("Please select a valid fruit and enter weight.");
+            return;
+        }
+
+        try {
+            const priceResponse = await fetch(`/api/price?fruit=${encodeURIComponent(currentFruit)}`);
+            const { price } = await priceResponse.json();
+
+            const newItem = {
+            fruit: currentFruit,
+            weight: weight.toFixed(2),
+            price: price.toFixed(2),
+            total: (weight * price).toFixed(2)
+            };
+
+            addItemToCart(newItem);
+            updateTotals();
+            resetSelection();
+        } catch (err) {
+            console.error("Failed to fetch price:", err);
+        }
+        }
+
+        // Reset inputs
+        function resetSelection() {
+        document.getElementById('weightInput').value = '';
+        predictedImage.classList.add('hidden');
+        video.classList.remove('hidden');
+        currentFruit = null;
+        fruitLabel.textContent = "None";
+        }
+
+        // Helper: Get CSRF Token from cookies
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+            }
+        }
+        return cookieValue;
+        }
+
+        // CART MANAGEMENT
+        const cart = [];
+
+        function addItemToCart(item) {
+        cart.push(item);
+        renderCart();
+        }
+
+        function removeItem(index) {
+        cart.splice(index, 1);
+        renderCart();
+        updateTotals();
+        }
+
+        function renderCart() {
+        const tbody = document.getElementById('cartTableBody');
+        tbody.innerHTML = "";
+
+        cart.forEach((item, index) => {
+            const row = `
+            <tr class="border-b hover:bg-gray-50">
+                <td class="px-4 py-2">${item.fruit}</td>
+                <td class="px-4 py-2">${item.weight} kg</td>
+                <td class="px-4 py-2">LKR ${item.price}</td>
+                <td class="px-4 py-2">LKR ${item.total}</td>
+                <td class="px-4 py-2">
+                <button onclick="removeItem(${index})" class="text-red-500 hover:text-red-700 text-sm">Remove</button>
+                </td>
+            </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+        }
+
+        function updateTotals() {
+    let subtotal = 0;
+    cart.forEach(item => {
+        subtotal += parseFloat(item.total);
+    });
+
+    const discount = subtotal >= 100 ? subtotal * 0.05 : 0; // Example: 5% discount over ₹100
+    const total = subtotal - discount;
+
+    document.getElementById('subtotal').textContent = `LKR ${subtotal.toFixed(2)}`;
+    document.getElementById('discount').textContent = `LKR ${discount.toFixed(2)}`;
+    document.getElementById('total').textContent = `LKR ${total.toFixed(2)}`;
+    }
+
+
+        function resetCart() {
+        cart.length = 0;
+        renderCart();
+        updateTotals();
+        }
+
+        function printReceipt() {
+        window.print(); // Simple built-in receipt print
+        }
+
+       
+
+    async function fetchFruitData() {
+        try {
+        const response = await fetch('http://localhost:5001/get_fruit');
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+
+        // Update UI
+        document.getElementById('fruit-name').textContent = data.name || 'None';
+        document.getElementById('fruit-price').textContent = data.price || 0;
+        } catch (err) {
+        console.error('Error fetching fruit data:', err);
+        }
+    }
+
+    // Fetch every 1 second (real-time update)
+    setInterval(fetchFruitData, 1000);
+
+
+        
+    </script>
+    <script>
+async function fetchDetectedItems() {
+    try {
+        const response = await fetch("{% url 'get_detected_fruit' %}");
+        const data = await response.json();
+
+        const fruit = data.fruit;
+        currentFruit = fruit !== 'None' ? fruit : null;  // ✅ Assign to global
+
+        const fruitLabel = document.getElementById('fruitLabel').querySelector('span');
+        fruitLabel.textContent = fruit.charAt(0).toUpperCase() + fruit.slice(1);
+
+        const predictedImage = document.getElementById('predictedImage');
+        const video = document.getElementById('webcam');
+
+        if (fruit && fruit !== 'None') {
+            predictedImage.src = `/media/fruits/${fruit.toLowerCase()}.jpg`;
+            predictedImage.classList.remove('hidden');
+            video.classList.add('hidden');
+        } else {
+            predictedImage.classList.add('hidden');
+            video.classList.remove('hidden');
+        }
+
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+}
+
+setInterval(fetchDetectedItems, 1000);
+
+
+    // Fetch every second
+    setInterval(fetchDetectedItems, 1000);
+    fetchDetectedItems(); // Run once on load
+
+    async function addToBill() {
+    const weightInput = document.getElementById('weightInput');
+    const weight = parseFloat(weightInput.value);
+
+    if (!currentFruit || isNaN(weight) || weight <= 0) {
+        alert("Please select a valid fruit and enter weight.");
+        return;
+    }
+
+    try {
+        const priceResponse = await fetch(`/api/price?fruit=${encodeURIComponent(currentFruit)}`);
+        const result = await priceResponse.json();
+
+        if (result.error) {
+            alert("Price not found for fruit: " + currentFruit);
+            return;
+        }
+
+        const price = result.price;
+
+        const newItem = {
+            fruit: currentFruit,
+            weight: weight.toFixed(2),
+            price: price.toFixed(2),
+            total: (weight * price).toFixed(2)
+        };
+
+        addItemToCart(newItem);
+        updateTotals();
+        resetSelection();
+    } catch (err) {
+        console.error("Failed to fetch price:", err);
+    }
+}
+
+
+async function fetchWeight() {
+  try {
+    const response = await fetch('http://127.0.0.1:5050/weight');
+    const data = await response.json();
+    document.getElementById('weightInput').value = data.weight.toFixed(2);
+  } catch (err) {
+    console.error('Error fetching weight:', err);
+  }
+}
+
+// Fetch weight every second
+setInterval(fetchWeight, 1000);
+fetchWeight();
+
+    
+    
+</script>
+
+    </body>
+    </html>
