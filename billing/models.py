@@ -4,14 +4,22 @@ class Item(models.Model):
     name = models.CharField(max_length=100, unique=True)
     price_per_kg = models.FloatField()
     description = models.TextField(blank=True, null=True)
-    # image = models.ImageField(upload_to='items/', blank=True, null=True)  # Optional: for display
     available = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
 
 
+class Bill(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    total_amount = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f"Bill #{self.id} - Rs.{self.total_amount:.2f}"
+
+
 class Transaction(models.Model):
+    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='transactions', null=True, blank=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='transactions')
     weight = models.FloatField()  # in grams
     total_price = models.FloatField(blank=True, null=True)

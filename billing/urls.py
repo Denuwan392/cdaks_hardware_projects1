@@ -10,7 +10,7 @@ urlpatterns = [
     path('get_fruit/', views.get_detected_fruit, name='get_detected_fruit'),
     path('api/price/', views.get_item_price, name='get_item_price'),
     path('api/price', views.get_price, name='get_price'),
-
-      
+    path('process_bill/', views.process_bill_view, name='process_bill'),
+    path('api/process_bill/', views.process_bill, name='process_bill'),
     
 ]

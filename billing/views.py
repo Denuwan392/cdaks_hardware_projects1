@@ -54,7 +54,7 @@ from django.http import StreamingHttpResponse
 import cv2
 from ultralytics import YOLO
 
-model = YOLO('/Users/denuwanwijesinghe/Documents/BSc. Artficial Intellligence/Hardware Project/Models/my_model/my_model.pt')  # Adjust path
+model = YOLO('/Users/denuwanwijesinghe/Documents/BSc. Artficial Intellligence/Hardware Project/cdaks/Model/my_model/my_model.pt')  # Adjust path
 
 # Open camera (adjust index if needed)
 cap = cv2.VideoCapture(0)
@@ -128,6 +128,79 @@ def get_price(request):
         return JsonResponse({'price': item.price_per_kg})
     except Item.DoesNotExist:
         return JsonResponse({'error': 'Fruit not found'}, status=404)
+
+
+
+
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Item, Transaction
+
+@csrf_exempt
+def process_bill_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            items = data.get("items", [])
+
+            for entry in items:
+                fruit_name = entry.get("fruit")
+                weight = float(entry.get("weight", 0)) * 1000  # Convert kg to grams
+
+                item = Item.objects.filter(name__iexact=fruit_name).first()
+                if not item:
+                    return JsonResponse({"success": False, "message": f"Item '{fruit_name}' not found"}, status=400)
+
+                Transaction.objects.create(item=item, weight=weight)
+
+            return JsonResponse({"success": True})
+
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+    return JsonResponse({"success": False, "message": "Invalid request"}, status=400)
+
+
+# views.py
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
+from .models import Item, Transaction, Bill
+
+@csrf_exempt
+def process_bill(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        items = data.get('items', [])
+
+        if not items:
+            return JsonResponse({'error': 'No items provided'}, status=400)
+
+        bill = Bill.objects.create()
+
+        total_amount = 0.0
+
+        for entry in items:
+            try:
+                item = Item.objects.get(name__iexact=entry['fruit'])
+                weight = float(entry['weight']) * 1000  # convert kg to g
+
+                transaction = Transaction.objects.create(
+                    bill=bill,
+                    item=item,
+                    weight=weight
+                )
+                total_amount += transaction.total_price
+            except Exception as e:
+                return JsonResponse({'error': f'Failed to process item {entry["fruit"]}: {str(e)}'}, status=500)
+
+        bill.total_amount = total_amount
+        bill.save()
+
+        return JsonResponse({'message': 'Bill processed', 'bill_id': bill.id, 'total': total_amount})
+
 
 
 

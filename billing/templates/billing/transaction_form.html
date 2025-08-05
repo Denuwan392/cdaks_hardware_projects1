@@ -57,7 +57,7 @@
     }
 
     const pricePerKg = fruitPrices[fruitName];
-    const totalPrice = (weight / 1000) * pricePerKg;
+    const totalPrice = (weight / 0) * pricePerKg;
 
     pricePerKgEl.textContent = `₹${pricePerKg.toFixed(2)}`;
     totalPriceEl.textContent = `₹${totalPrice.toFixed(2)}`;

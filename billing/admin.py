@@ -1,8 +1,5 @@
 from django.contrib import admin
-from .models import Transaction
-
-from django.contrib import admin
-from .models import Transaction, Item
+from .models import Transaction, Item, Bill
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
@@ -20,3 +17,9 @@ class TransactionAdmin(admin.ModelAdmin):
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
     list_display = ('name', 'price_per_kg', 'available')
+
+
+
+@admin.register(Bill)
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'total_amount')
